@@ -6,9 +6,9 @@ import * as THREE from "three";
 // ── Scene constants ───────────────────────────────────────────────────────────
 const MOON_DIST   = 100;
 const EARTH_R     = 6;
-const MOON_R      = 4;
+const MOON_R      = 5.5;
 const TOTAL_KM    = 384_400;
-const SCENE_SCALE = MOON_DIST / TOTAL_KM;        // km → scene units
+// SCENE_SCALE = MOON_DIST / TOTAL_KM — used externally for reference
 const MOON_PERIOD = 27.32166 * 86_400;           // seconds per lunar orbit
 
 const RETURN_PHASES = new Set(["COAST_RETURN", "REENTRY", "SPLASHDOWN"]);
@@ -25,21 +25,24 @@ const PHASES = [
   { key: "SPLASHDOWN",     label: "🌊",  fullLabel: "SPLASH"        },
 ];
 
-// ── Trajectory curve (module-level singletons) ────────────────────────────────
-const WAYPOINTS = [
-  [ 0,   0,   EARTH_R],
-  [ 6,   9,   22],
-  [ 4,  14,   50],
-  [ 2,   7,   82],
-  [ 0,   0,   MOON_DIST],
-  [-2,  -6,   80],
-  [-5, -12,   50],
-  [-3,  -7,   22],
-  [ 0,   0,   EARTH_R],
-].map(([x, y, z]) => new THREE.Vector3(x, y, z));
-
-const CURVE        = new THREE.CatmullRomCurve3(WAYPOINTS, false, "catmullrom", 0.5);
-const CURVE_PTS    = CURVE.getPoints(200);   // 201 fixed points, indices 0-200
+// ── Trajectory curve — rebuilt dynamically so it always ends at Moon's position ─
+function buildCurve(moonPos) {
+  const [mx, my, mz] = moonPos;
+  // Outbound arc peaks at mid-journey, approaches Moon from above
+  // Return arc sweeps below and back to Earth
+  const pts = [
+    new THREE.Vector3(0,          0,           EARTH_R),
+    new THREE.Vector3(mx * 0.08 + 6,  9,       22),
+    new THREE.Vector3(mx * 0.4  + 2,  14,      50),
+    new THREE.Vector3(mx * 0.8  + 1,  my + 3,  mz * 0.82),
+    new THREE.Vector3(mx,             my,       mz),          // Moon
+    new THREE.Vector3(mx * 0.8  - 2,  my - 5,  mz * 0.82),
+    new THREE.Vector3(-5,            -12,       50),
+    new THREE.Vector3(-3,            -7,        22),
+    new THREE.Vector3(0,              0,        EARTH_R),
+  ];
+  return new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
+}
 
 function getCurveT(dist, phase) {
   const frac = Math.min(1, Math.max(0, (isFinite(dist) ? dist : 0) / TOTAL_KM));
@@ -109,26 +112,26 @@ function MoonMesh({ moonPos }) {
   return (
     <group position={moonPos}>
       <mesh ref={ref}>
-        <sphereGeometry args={[MOON_R, 32, 32]} />
-        <meshStandardMaterial color="#6a6a7e" roughness={0.95} emissive="#181820" emissiveIntensity={0.3} />
+        <sphereGeometry args={[MOON_R, 48, 48]} />
+        <meshStandardMaterial color="#8a8a9e" roughness={0.88} emissive="#303040" emissiveIntensity={0.4} />
       </mesh>
       <mesh>
-        <sphereGeometry args={[MOON_R * 1.06, 16, 16]} />
-        <meshStandardMaterial color="#9999bb" transparent opacity={0.07} side={THREE.BackSide} depthWrite={false} />
+        <sphereGeometry args={[MOON_R * 1.05, 16, 16]} />
+        <meshStandardMaterial color="#aaaacc" transparent opacity={0.08} side={THREE.BackSide} depthWrite={false} />
       </mesh>
     </group>
   );
 }
 
 // #2 — Split trajectory: flown (cyan) + remaining (dim blue)
-function TrajLine({ curveT }) {
-  const splitIdx = Math.round(Math.min(1, Math.max(0, curveT)) * 200);
-  const flown     = useMemo(() => CURVE_PTS.slice(0, splitIdx + 1), [splitIdx]);
-  const remaining = useMemo(() => CURVE_PTS.slice(splitIdx),        [splitIdx]);
+function TrajLine({ curvePts, curveT }) {
+  const splitIdx  = Math.round(Math.min(1, Math.max(0, curveT)) * (curvePts.length - 1));
+  const flown     = useMemo(() => curvePts.slice(0, splitIdx + 1), [curvePts, splitIdx]);
+  const remaining = useMemo(() => curvePts.slice(splitIdx),        [curvePts, splitIdx]);
   return (
     <>
-      {flown.length     >= 2 && <Line points={flown}     color="#00d4ff" lineWidth={2}   />}
-      {remaining.length >= 2 && <Line points={remaining} color="#1a3a5c" lineWidth={1}   />}
+      {flown.length     >= 2 && <Line points={flown}     color="#00d4ff" lineWidth={2} />}
+      {remaining.length >= 2 && <Line points={remaining} color="#1a3a5c" lineWidth={1} />}
     </>
   );
 }
@@ -250,6 +253,13 @@ export default function TrajectoryView3D({
   // #6 — Moon position drifts with lunar period
   const moonPos = useMemo(() => getMoonScenePos(metTotalSeconds), [metTotalSeconds]);
 
+  // Dynamic curve that always ends at the Moon's actual position
+  const { curve, curvePts } = useMemo(() => {
+    const c   = buildCurve(moonPos);
+    const pts = c.getPoints(200);
+    return { curve: c, curvePts: pts };
+  }, [moonPos]);
+
   // #1 — Use state vector magnitude for more accurate distance when available
   const dist = useMemo(() => {
     const sv = stateVector?.position;
@@ -261,7 +271,7 @@ export default function TrajectoryView3D({
   }, [stateVector, distanceFromEarth]);
 
   const curveT     = useMemo(() => getCurveT(dist, phase), [dist, phase]);
-  const capsulePos = useMemo(() => CURVE.getPoint(Math.min(1, Math.max(0, curveT))), [curveT]);
+  const capsulePos = useMemo(() => curve.getPoint(Math.min(1, Math.max(0, curveT))), [curve, curveT]);
   const isReturn   = RETURN_PHASES.has(phase);
   const phaseIdx   = PHASES.findIndex(p => p.key === phase);
 
@@ -360,16 +370,17 @@ export default function TrajectoryView3D({
         >
           <color attach="background" args={["#020810"]} />
 
-          <ambientLight intensity={0.7} />
+          <ambientLight intensity={0.9} />
           <directionalLight position={[80, 60, -30]} intensity={2.2} color="#fff8f0" />
           <pointLight position={[0, 0, -40]}   intensity={0.8} color="#ffffff" />
           <pointLight position={[-40, -20, 60]} intensity={0.4} color="#2244ff" />
+          <pointLight position={[moonPos[0] + 30, moonPos[1] + 20, moonPos[2] - 20]} intensity={1.8} color="#fffaf0" />
 
           <Stars radius={220} depth={60} count={5000} factor={5} saturation={0.1} fade speed={0.4} />
 
           <EarthMesh />
           <MoonMesh moonPos={moonPos} />
-          <TrajLine curveT={curveT} />
+          <TrajLine curvePts={curvePts} curveT={curveT} />
           <Capsule position={capsulePos} phase={phase} />
 
           <Label position={[0, EARTH_R + 3, 0]}                              text="EARTH" color="#6699ff" />
@@ -402,7 +413,7 @@ export default function TrajectoryView3D({
         border: "1px solid #1a3a5c",
         borderRadius: 8,
       }}>
-        <div style={{ display: "flex", gap: 3, alignItems: "stretch", height: 36 }}>
+        <div style={{ display: "flex", gap: 4, alignItems: "stretch", height: 52 }}>
           {PHASES.map((p, i) => {
             const isPast    = i < phaseIdx;
             const isCurrent = i === phaseIdx;
@@ -416,12 +427,12 @@ export default function TrajectoryView3D({
                   alignItems: "center", justifyContent: "center",
                   backgroundColor: isCurrent ? "#00d4ff1a" : isPast ? "#1a3a5c33" : "transparent",
                   border: `1px solid ${isCurrent ? "#00d4ff55" : isPast ? "#1a3a5c66" : "#1a3a5c22"}`,
-                  borderRadius: 3,
+                  borderRadius: 5,
                   textAlign: "center",
-                  padding: "2px 1px",
+                  padding: "4px 2px",
                   transition: "background-color 0.4s, border-color 0.4s, color 0.4s",
                   position: "relative",
-                  gap: 1,
+                  gap: 3,
                 }}
               >
                 {isCurrent && (
@@ -429,16 +440,21 @@ export default function TrajectoryView3D({
                     position: "absolute", bottom: 0, left: 0, right: 0,
                     height: 2,
                     background: "linear-gradient(90deg, transparent, #00d4ff, transparent)",
-                    borderRadius: "0 0 3px 3px",
+                    borderRadius: "0 0 5px 5px",
                   }} />
                 )}
-                <span style={{ fontSize: 10, lineHeight: 1 }}>{p.label}</span>
+                <span style={{ fontSize: 14, lineHeight: 1 }}>{p.label}</span>
                 <span style={{
-                  fontSize: 6,
+                  fontSize: 7,
                   fontFamily: "'Orbitron', monospace",
-                  color: isCurrent ? "#00d4ff" : isPast ? "#2a4a6a" : "#1a2a3a",
-                  letterSpacing: "0.03em",
+                  color: isCurrent ? "#00d4ff" : isPast ? "#3a5a7a" : "#1a2a3a",
+                  letterSpacing: "0.04em",
                   lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: "100%",
+                  padding: "0 2px",
                 }}>
                   {p.fullLabel}
                 </span>
