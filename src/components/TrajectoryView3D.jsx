@@ -25,21 +25,32 @@ const PHASES = [
   { key: "SPLASHDOWN",     label: "🌊",  fullLabel: "SPLASH"        },
 ];
 
-// ── Trajectory curve — rebuilt dynamically so it always ends at Moon's position ─
+// ── Trajectory curve — rebuilt dynamically so it always ends at Moon's surface ─
 function buildCurve(moonPos) {
   const [mx, my, mz] = moonPos;
-  // Outbound arc peaks at mid-journey, approaches Moon from above
-  // Return arc sweeps below and back to Earth
+
+  // Direction from Moon back toward Earth — trajectory grazes Moon surface, not center
+  const moonVec  = new THREE.Vector3(mx, my, mz);
+  const toEarth  = new THREE.Vector3(0, 0, 0).sub(moonVec).normalize();
+  // Touch-point on Moon's Earth-facing surface
+  const surface  = moonVec.clone().add(toEarth.clone().multiplyScalar(MOON_R + 1.5));
+  // Approach: come in from slightly above on the outbound arc
+  const approach = moonVec.clone().add(toEarth.clone().multiplyScalar(MOON_R + 18))
+    .add(new THREE.Vector3(0, 6, 0));
+  // Departure: leave from slightly below on the return arc
+  const depart   = moonVec.clone().add(toEarth.clone().multiplyScalar(MOON_R + 18))
+    .add(new THREE.Vector3(0, -6, 0));
+
   const pts = [
-    new THREE.Vector3(0,          0,           EARTH_R),
-    new THREE.Vector3(mx * 0.08 + 6,  9,       22),
-    new THREE.Vector3(mx * 0.4  + 2,  14,      50),
-    new THREE.Vector3(mx * 0.8  + 1,  my + 3,  mz * 0.82),
-    new THREE.Vector3(mx,             my,       mz),          // Moon
-    new THREE.Vector3(mx * 0.8  - 2,  my - 5,  mz * 0.82),
-    new THREE.Vector3(-5,            -12,       50),
-    new THREE.Vector3(-3,            -7,        22),
-    new THREE.Vector3(0,              0,        EARTH_R),
+    new THREE.Vector3(0,  0,  EARTH_R),
+    new THREE.Vector3(mx * 0.08 + 5,  10, 22),
+    new THREE.Vector3(mx * 0.4  + 2,  15, 50),
+    approach,
+    surface,               // graze Moon surface — not center
+    depart,
+    new THREE.Vector3(-5, -12, 50),
+    new THREE.Vector3(-3, -7,  22),
+    new THREE.Vector3(0,  0,   EARTH_R),
   ];
   return new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
 }
@@ -412,8 +423,9 @@ export default function TrajectoryView3D({
         backgroundColor: "#0a1628",
         border: "1px solid #1a3a5c",
         borderRadius: 8,
+        overflowX: "auto",
       }}>
-        <div style={{ display: "flex", gap: 4, alignItems: "stretch", height: 52 }}>
+        <div style={{ display: "flex", gap: 4, alignItems: "stretch", height: 56, minWidth: 480 }}>
           {PHASES.map((p, i) => {
             const isPast    = i < phaseIdx;
             const isCurrent = i === phaseIdx;
@@ -443,17 +455,14 @@ export default function TrajectoryView3D({
                     borderRadius: "0 0 5px 5px",
                   }} />
                 )}
-                <span style={{ fontSize: 14, lineHeight: 1 }}>{p.label}</span>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>{p.label}</span>
                 <span style={{
-                  fontSize: 7,
+                  fontSize: 8,
                   fontFamily: "'Orbitron', monospace",
                   color: isCurrent ? "#00d4ff" : isPast ? "#3a5a7a" : "#1a2a3a",
                   letterSpacing: "0.04em",
                   lineHeight: 1,
                   whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  maxWidth: "100%",
                   padding: "0 2px",
                 }}>
                   {p.fullLabel}
