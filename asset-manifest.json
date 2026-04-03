@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/Artemis-Tracker/static/css/main.f16f3a1a.css",
-    "main.js": "/Artemis-Tracker/static/js/main.c12a9ce7.js",
+    "main.css": "/Artemis-Tracker/static/css/main.45927f93.css",
+    "main.js": "/Artemis-Tracker/static/js/main.41871c76.js",
     "static/js/453.ae6724c6.chunk.js": "/Artemis-Tracker/static/js/453.ae6724c6.chunk.js",
     "index.html": "/Artemis-Tracker/index.html",
-    "main.f16f3a1a.css.map": "/Artemis-Tracker/static/css/main.f16f3a1a.css.map",
-    "main.c12a9ce7.js.map": "/Artemis-Tracker/static/js/main.c12a9ce7.js.map",
+    "main.45927f93.css.map": "/Artemis-Tracker/static/css/main.45927f93.css.map",
+    "main.41871c76.js.map": "/Artemis-Tracker/static/js/main.41871c76.js.map",
     "453.ae6724c6.chunk.js.map": "/Artemis-Tracker/static/js/453.ae6724c6.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.f16f3a1a.css",
-    "static/js/main.c12a9ce7.js"
+    "static/css/main.45927f93.css",
+    "static/js/main.41871c76.js"
   ]
 }
