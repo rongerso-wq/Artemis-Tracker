@@ -7,6 +7,7 @@ import MissionLog from "./components/MissionLog";
 import SettingsPanel, { loadSettings } from "./components/SettingsPanel";
 import { useArtemisData, MISSION_START as DEFAULT_MISSION_START } from "./hooks/useArtemisData";
 import { useMilestoneAlerts } from "./hooks/useMilestoneAlerts";
+import NasaTVCard from "./components/NasaTVCard";
 
 // ── Embed mode: ?embed=1 hides the header and removes padding ─────────────────
 const IS_EMBED = new URLSearchParams(window.location.search).get("embed") === "1";
@@ -245,9 +246,10 @@ export default function App() {
           />
         </div>
 
-        {/* Mission Control Log */}
+        {/* NASA TV + Mission Log side by side on desktop */}
         {!IS_EMBED && (
-          <div className="mt-4 md:mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 md:mt-6">
+            <NasaTVCard />
             <MissionLog metTotalSeconds={met?.totalSeconds ?? 0} />
           </div>
         )}
