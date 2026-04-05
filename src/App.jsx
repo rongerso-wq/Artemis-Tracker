@@ -193,43 +193,45 @@ export default function App() {
           </div>
         )}
 
-        {/* Milestone + State Vectors side by side on desktop */}
+        {/* NASA TV + Milestone side by side — visible on first load */}
         {!IS_EMBED && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 md:mb-6">
+            <NasaTVCard />
             <MissionMilestone metTotalSeconds={met?.totalSeconds ?? 0} />
+          </div>
+        )}
 
-            {stateVector ? (
-              <div
-                className="glow-border scanline rounded-xl p-5"
-                style={{ backgroundColor: "#0a1628", border: "1px solid #1a3a5c" }}
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xl">📡</span>
-                  <span className="text-xs uppercase tracking-widest font-bold"
-                    style={{ color: "#4a7fa5", fontFamily: "'Orbitron', monospace" }}>
-                    State Vectors
-                  </span>
-                  <span className="ml-auto text-xs px-2 py-0.5 rounded"
-                    style={{ backgroundColor: "#0a1628", border: "1px solid #1a3a5c", color: "#4a7fa5", fontFamily: "'Orbitron', monospace" }}>
-                    RAW TELEMETRY
-                  </span>
-                </div>
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <p className="text-xs mb-1 uppercase tracking-widest" style={{ color: "#4a7fa5" }}>Position (X / Y / Z) km</p>
-                    <p className="text-xs font-mono break-all" style={{ color: "#00d4ff" }}>
-                      {fmtVec(stateVector.position)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs mb-1 uppercase tracking-widest" style={{ color: "#4a7fa5" }}>Velocity (VX / VY / VZ) km·s⁻¹</p>
-                    <p className="text-xs font-mono break-all" style={{ color: "#39ff14" }}>
-                      {fmtVec(stateVector.velocity)}
-                    </p>
-                  </div>
-                </div>
+        {/* State Vectors */}
+        {!IS_EMBED && stateVector && (
+          <div
+            className="glow-border scanline rounded-xl p-5 mb-4 md:mb-6"
+            style={{ backgroundColor: "#0a1628", border: "1px solid #1a3a5c" }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xl">📡</span>
+              <span className="text-xs uppercase tracking-widest font-bold"
+                style={{ color: "#4a7fa5", fontFamily: "'Orbitron', monospace" }}>
+                State Vectors
+              </span>
+              <span className="ml-auto text-xs px-2 py-0.5 rounded"
+                style={{ backgroundColor: "#0a1628", border: "1px solid #1a3a5c", color: "#4a7fa5", fontFamily: "'Orbitron', monospace" }}>
+                RAW TELEMETRY
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs mb-1 uppercase tracking-widest" style={{ color: "#4a7fa5" }}>Position (X / Y / Z) km</p>
+                <p className="text-xs font-mono break-all" style={{ color: "#00d4ff" }}>
+                  {fmtVec(stateVector.position)}
+                </p>
               </div>
-            ) : <div />}
+              <div>
+                <p className="text-xs mb-1 uppercase tracking-widest" style={{ color: "#4a7fa5" }}>Velocity (VX / VY / VZ) km·s⁻¹</p>
+                <p className="text-xs font-mono break-all" style={{ color: "#39ff14" }}>
+                  {fmtVec(stateVector.velocity)}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -246,10 +248,9 @@ export default function App() {
           />
         </div>
 
-        {/* NASA TV + Mission Log side by side on desktop */}
+        {/* Mission Log */}
         {!IS_EMBED && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 md:mt-6">
-            <NasaTVCard />
+          <div className="mt-4 md:mt-6">
             <MissionLog metTotalSeconds={met?.totalSeconds ?? 0} />
           </div>
         )}
