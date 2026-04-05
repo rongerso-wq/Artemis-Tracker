@@ -1,19 +1,13 @@
 import React, { useState } from "react";
 
-/**
- * NasaTVCard — embeds two NASA-related live streams with a tab switcher.
- * Stream A: NASA TV official YouTube channel (always-on programming)
- * Stream B: User-specified stream (e.g. mission-specific live coverage)
- */
-
 const STREAMS = [
   {
     id: "nasatv",
     label: "NASA TV",
     icon: "🚀",
-    embedSrc: "https://www.youtube.com/embed/21X5lGlDOfg?autoplay=1&rel=0&modestbranding=1",
+    videoId: "21X5lGlDOfg",
     externalUrl: "https://www.youtube.com/@NASA/live",
-    description: "NASA TV · Official channel",
+    description: "NASA TV · Official Live Channel",
     footerNote: "NASA TV PUBLIC CHANNEL · MISSION COVERAGE PREEMPTS REGULAR PROGRAMMING",
     footerLink: "nasa.gov/nasatv",
     footerHref: "https://www.nasa.gov/nasatv",
@@ -22,9 +16,9 @@ const STREAMS = [
     id: "mission",
     label: "MISSION FEED",
     icon: "📡",
-    embedSrc: "https://www.youtube.com/embed/6PUAd0Bj1UA?autoplay=1&rel=0&modestbranding=1",
+    videoId: "6PUAd0Bj1UA",
     externalUrl: "https://www.youtube.com/live/6PUAd0Bj1UA",
-    description: "Mission Live Feed",
+    description: "Artemis II · Mission Live Feed",
     footerNote: "LIVE MISSION STREAM · ARTEMIS II COVERAGE",
     footerLink: "youtube.com/live ↗",
     footerHref: "https://www.youtube.com/live/6PUAd0Bj1UA",
@@ -32,82 +26,76 @@ const STREAMS = [
 ];
 
 function StreamPlayer({ stream }) {
-  const [loaded, setLoaded] = useState(false);
-  const [activated, setActivated] = useState(true);
+  const [playing, setPlaying] = useState(false);
 
-  // Reset state when stream changes
-  // (key prop on parent handles this — see below)
+  const embedSrc =
+    `https://www.youtube-nocookie.com/embed/${stream.videoId}` +
+    `?autoplay=1&mute=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
+
+  const thumb = `https://img.youtube.com/vi/${stream.videoId}/hqdefault.jpg`;
 
   return (
-    <div style={{ position: "relative", paddingTop: "56.25%", backgroundColor: "#050d1a" }}>
-      {!activated ? (
-        <div
-          onClick={() => setActivated(true)}
+    <div style={{ position: "relative", paddingTop: "56.25%", backgroundColor: "#050d1a", overflow: "hidden" }}>
+      {playing ? (
+        <iframe
+          title={stream.label}
+          src={embedSrc}
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
           style={{
             position: "absolute", inset: 0,
+            width: "100%", height: "100%",
+            border: "none",
+          }}
+        />
+      ) : (
+        /* Poster / click-to-play */
+        <div
+          onClick={() => setPlaying(true)}
+          style={{
+            position: "absolute", inset: 0,
+            cursor: "pointer",
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
-            cursor: "pointer",
-            background: "radial-gradient(ellipse at center, #0a1a2a 0%, #050d1a 100%)",
-            gap: 16,
+            gap: 14,
+            background: `linear-gradient(rgba(5,13,26,0.55), rgba(5,13,26,0.55)),
+                         url(${thumb}) center/cover no-repeat`,
           }}
         >
+          {/* Play button ring */}
           <div style={{
-            width: 80, height: 80, borderRadius: "50%",
-            border: "2px solid #00d4ff22",
+            width: 72, height: 72, borderRadius: "50%",
+            background: "rgba(0,212,255,0.15)",
+            border: "2px solid #00d4ff88",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 30px #00d4ff11",
-          }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: "50%",
-              border: "2px solid #00d4ff44",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <span style={{ fontSize: 28, lineHeight: 1 }}>▶</span>
-            </div>
+            boxShadow: "0 0 28px #00d4ff44",
+            transition: "transform 0.15s",
+          }}
+            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          >
+            <span style={{ fontSize: 28, color: "#00d4ff", marginLeft: 4 }}>▶</span>
           </div>
+
           <div style={{ textAlign: "center" }}>
             <p style={{
               fontFamily: "'Orbitron', monospace",
-              color: "#4a7fa5", fontSize: 10,
+              color: "#e0f0ff", fontSize: 10,
               letterSpacing: "0.15em", textTransform: "uppercase",
-              marginBottom: 6,
+              marginBottom: 4,
+              textShadow: "0 1px 6px #000",
             }}>
               {stream.description}
             </p>
-            <p style={{ color: "#2a4a6a", fontSize: 9, fontFamily: "'Orbitron', monospace" }}>
-              Click to load stream
+            <p style={{
+              color: "#00d4ffaa", fontSize: 9,
+              fontFamily: "'Orbitron', monospace",
+              letterSpacing: "0.1em",
+            }}>
+              CLICK TO WATCH LIVE
             </p>
           </div>
         </div>
-      ) : (
-        <>
-          {!loaded && (
-            <div style={{
-              position: "absolute", inset: 0,
-              backgroundColor: "#050d1a",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <p style={{ color: "#2a4a6a", fontFamily: "'Orbitron', monospace", fontSize: 9, letterSpacing: "0.1em" }}>
-                LOADING STREAM…
-              </p>
-            </div>
-          )}
-          <iframe
-            title={stream.label}
-            src={stream.embedSrc}
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowFullScreen
-            onLoad={() => setLoaded(true)}
-            style={{
-              position: "absolute", inset: 0,
-              width: "100%", height: "100%",
-              border: "none",
-              opacity: loaded ? 1 : 0,
-              transition: "opacity 0.4s",
-            }}
-          />
-        </>
       )}
     </div>
   );
@@ -159,7 +147,6 @@ export default function NasaTVCard() {
           LIVE
         </span>
 
-        {/* External link for active stream */}
         <a
           href={active.externalUrl}
           target="_blank"
@@ -219,7 +206,7 @@ export default function NasaTVCard() {
         })}
       </div>
 
-      {/* Player — keyed by stream id so it fully remounts on switch */}
+      {/* Player — keyed by stream id so it fully remounts on tab switch */}
       <StreamPlayer key={activeId} stream={active} />
 
       {/* Footer */}
