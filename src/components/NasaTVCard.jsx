@@ -11,7 +11,7 @@ const STREAMS = [
     id: "nasatv",
     label: "NASA TV",
     icon: "🚀",
-    embedSrc: "https://www.youtube.com/embed/live_stream?channel=UCLA_DiR1FfKNvjuUpBHmylQ&autoplay=1&rel=0&modestbranding=1",
+    embedSrc: "https://www.youtube.com/embed/21X5lGlDOfg?autoplay=1&rel=0&modestbranding=1",
     externalUrl: "https://www.youtube.com/@NASA/live",
     description: "NASA TV · Official channel",
     footerNote: "NASA TV PUBLIC CHANNEL · MISSION COVERAGE PREEMPTS REGULAR PROGRAMMING",
